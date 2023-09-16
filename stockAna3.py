@@ -93,26 +93,41 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self._line0_serie = QLineSeries()
         self._line01_serie = QLineSeries()
+        self._line02_serie = QLineSeries()
+        self._line03_serie = QLineSeries()
         self._line0_serie.count = 100
-
-        y1 = self.z[0]
-        self._line0_serie.append(0, y1)
-        k1 = 2.0 / (self.Avg1 +1.0)
-        k2 = 2.0 / 51
-        y2 = y1
-        for i in range(1, len(self.z)):
-            c = self.z[i]
-            c1 = c
-            c = c * k1 + y1 * (1-k1)
-            y1 = c
-            c1 = c1*k2 + y2 * (1-k2)
-            y2 = c1
-            self._line0_serie.append(i, c)
-            self._line01_serie.append(i, c1)
+        
+        r = Indicators(self.z).EMA(self.Avg1)
+        r1 = Indicators(self.z).EMA(self.Avg2)
+        for i in range(len(r)):
+            self._line0_serie.append(i, r[i])
+            self._line01_serie.append(i, r1[i])
+            self._line02_serie.append(i, r[i]*1.025)
+            self._line03_serie.append(i, r[i]*0.975)
+            
+            
         self._line0_serie.setColor(QtGui.QColor(QtCore.Qt.blue))
-        self._line01_serie.setColor(QtGui.QColor(QtCore.Qt.green))
+        self._line01_serie.setColor(QtGui.QColor(QtCore.Qt.red))
         self._chart.addSeries(self._line0_serie)
         self._chart.addSeries(self._line01_serie)
+
+        Pen1= QtGui.QPen()
+        Pen1.setWidth(2);
+        Pen1.setBrush(Qt.blue)
+        self._line0_serie.setPen(Pen1)
+
+        pen2 = QtGui.QPen()
+        pen2 = QPen(Qt.red, 2, Qt.DashLine, Qt.RoundCap, Qt.RoundJoin)
+        self._line01_serie.setPen(pen2)
+
+        pen=QtGui.QPen()
+        pen.setWidth(2)
+        pen.setStyle(Qt.DashDotLine)
+        pen.setBrush(Qt.green)
+        self._line02_serie.setPen(pen)
+        self._line03_serie.setPen(pen)
+        self._chart.addSeries(self._line02_serie)
+        self._chart.addSeries(self._line03_serie)
 
         self._chart.createDefaultAxes()
         self._chart.legend().hide()
@@ -123,46 +138,71 @@ class MainWindow(QtWidgets.QMainWindow):
         self._chart_view = QtChart.QChartView()
         self._chart.axisX(self._line0_serie).setVisible(False)
         self._chart.axisX(self._line01_serie).setVisible(False)
+        self._chart.axisX(self._line02_serie).setVisible(False)
+        self._chart.axisX(self._line03_serie).setVisible(False)
         self._chart.setTitle(self.name);
 
         font=QtGui.QFont()
         font.setPixelSize(20)
         font.setPointSize(20)
         self._chart.setTitleFont(font)
-        
+
+
         self._chart_view = QChartView(self._chart)       
         
         return self._chart_view        
 
 
     def creat_volumechart(self):
-        self._volume_serie = QLineSeries()
+#        self._volume_serie = QLineSeries()
         self._volume1_serie = QLineSeries()
         self._volume1_serie.count = 100
 
+        self._volume_serie = QtChart.QCandlestickSeries()
+        self._volume_serie.setDecreasingColor(QtGui.QColor(QtCore.Qt.red))
+        self._volume_serie.setIncreasingColor(QtGui.QColor(QtCore.Qt.green))
+        
+        self._volume_serie.count = 100
         c1 = 10.0/np.max(self.v)
         list = []
-        for i in range(0, len(self.v)):
+        tm = []
+        for i in range(0, len(self.z)):
             c = self.v[i]*c1
-            self._volume_serie.append(i, c)
             list.append(c)
+            if self.o[i] > self.z[i]:
+                o_ = c
+                h_ = c
+                l_ = 0
+                c_ = 0
+            else:
+                o_ = 0
+                h_ = c
+                l_ = 0
+                c_ = c
+
+            self._volume_serie.append(QtChart.QCandlestickSet(o_, h_, l_, c_))
+            tm.append(str(i))
 
         r = Indicators(list).EMA(self.Avg2)
         for i in range(1, len(self.v)):
             c = r[i]
             self._volume1_serie.append(i, c)
 
-        self._volume1_serie.setColor(QtGui.QColor(QtCore.Qt.red))
+#        self._volume1_serie.setColor(QtGui.QColor(QtCore.Qt.red))
 
         Pen= QtGui.QPen()
-        Pen.setWidth(2);
-        self._volume_serie.setPen(Pen);
+        Pen.setWidth(3);
+        Pen.setBrush(Qt.black)
+        self._volume1_serie.setPen(Pen)
 
         self._volume = QChart()
+
         self._volume.addSeries(self._volume_serie)
         self._volume.addSeries(self._volume1_serie)
         self._volume.createDefaultAxes()
         self._volume.legend().hide()
+        self._volume.axisX(self._volume_serie).setCategories(tm)
+        self._volume.axisX(self._volume_serie).setVisible(False)
 
         self._volume_view = QtChart.QChartView()
         self._volume.setMargins(QMargins(15,0,50,0))
@@ -170,7 +210,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self._volume.setTitle("Volume (with its 50 days EMA)");
 
         self._volume_view = QChartView(self._volume)
-        self._volume.axisX(self._volume_serie).setVisible(False)
         self._volume.axisX(self._volume1_serie).setVisible(False)
         
 #        self._line.axisX(self._line_serie).setGridLineVisible(True)
@@ -267,9 +306,17 @@ class MainWindow(QtWidgets.QMainWindow):
         self._chart.axisX(self._line01_serie).setRange(
             value_min, value1
         )
+
+        self._chart.axisX(self._line02_serie).setRange(
+            value_min, value1
+        )
+
+        self._chart.axisX(self._line03_serie).setRange(
+            value_min, value1
+        )
         
         self._volume.axisX(self._volume_serie).setRange(
-            value_min, value1
+            str(value_min), str(value1)
         )
 
         self._volume.axisX(self._volume1_serie).setRange(
@@ -286,6 +333,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self._chart.axisY(self._candlestick_serie).setRange(ymin, ymax)
             self._chart.axisY(self._line0_serie).setRange(ymin, ymax)
             self._chart.axisY(self._line01_serie).setRange(ymin, ymax)
+            self._chart.axisY(self._line02_serie).setRange(ymin, ymax)
+            self._chart.axisY(self._line03_serie).setRange(ymin, ymax)
             self._volume.axisY(self._volume_serie).setRange(0, 10)
             self._volume.axisY(self._volume1_serie).setRange(0, 10)
             self._line3.axisY(self._line3_serie).setRange(10, 90)
