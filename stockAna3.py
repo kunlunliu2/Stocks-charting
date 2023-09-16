@@ -163,11 +163,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self._volume_serie.setIncreasingColor(QtGui.QColor(QtCore.Qt.green))
         
         self._volume_serie.count = 100
-        c1 = 10.0/np.max(self.v)
+        c1 = 0.0
+        for i in range(len(self.z)):
+            c1 = max(c1, (self.z[i]+self.o[i])*self.v[i])
+        c1 = 10.0 / c1
         list = []
         tm = []
         for i in range(0, len(self.z)):
-            c = self.v[i]*c1
+            c = self.v[i]*(self.z[i]+self.o[i])*c1
             list.append(c)
             if self.o[i] > self.z[i]:
                 o_ = c
@@ -207,7 +210,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._volume_view = QtChart.QChartView()
         self._volume.setMargins(QMargins(15,0,50,0))
 
-        self._volume.setTitle("Volume (with its 50 days EMA)");
+        self._volume.setTitle("Volume*(Close+Open) (with its 50 days EMA)");
 
         self._volume_view = QChartView(self._volume)
         self._volume.axisX(self._volume1_serie).setVisible(False)
@@ -226,6 +229,11 @@ class MainWindow(QtWidgets.QMainWindow):
         for i in range(len(r)):
             self._line3_serie.append(i, r[i])
 
+        Pen= QtGui.QPen()
+        Pen.setWidth(2);
+        Pen.setBrush(Qt.blue)
+        self._line3_serie.setPen(Pen)
+
         self._line3 = QChart()
         self._line3.addSeries(self._line3_serie)
         self._line3.createDefaultAxes()
@@ -241,7 +249,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._line3_serie.attachAxis(TimeaxisX)
         self._line3.addAxis(TimeaxisX, Qt.AlignBottom)
         axisPen= QtGui.QPen()
-        axisPen.setWidth(2);
+        axisPen.setWidth(3);
         TimeaxisX.setLinePen(axisPen);
 
         return self._line3_view
