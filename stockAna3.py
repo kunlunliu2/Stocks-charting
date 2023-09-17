@@ -216,7 +216,6 @@ class AnotherWindow(QtWidgets.QWidget):
 
 
     def creat_volumechart(self):
-#        self._volume_serie = QLineSeries()
         self._volume1_serie = QLineSeries()
         self._volume1_serie.count = 100
 
