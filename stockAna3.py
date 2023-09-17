@@ -14,8 +14,6 @@ from Indicators import Indicators
 from stockFile import stockFile
 import yfinance as yf
 
-St =  "^SPX"
-
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         QMainWindow.__init__(self)
