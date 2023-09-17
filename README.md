@@ -6,4 +6,4 @@ It is a repository that downloads, plots, and records the US—stock data for tr
   (4) python -m pip install datetime
   (5) python -m pip install numpy
 
-After the installation, stockAna3.py is the main executable. The Volatility indicator is calculated by: (Today's close - Today's open) / (Today's volume * Today's close) * factor + 50. This indicator measures how easily the stock price can be moved by volume. when > 50, it is bullish and bearish when < 50. High-frequency oscillation with large amplitude indicates the domination of short team swing trading. This is often seen when the stock moves to a high peak or bottom. 
+After the installation, stockAna3.py is the main executable. The Volatility indicator is calculated by: (Today's close - Today's open) / (Today's volume * Today's close) * factor + 50. This indicator measures how easily the stock price can be moved by volume. when > 50, it is bullish and bearish when < 50. High-frequency oscillation with large amplitude indicates the domination of short team swing trading. This is often seen when the stock price moves to its peak or bottom. 
