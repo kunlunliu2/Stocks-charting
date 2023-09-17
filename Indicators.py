@@ -61,13 +61,17 @@ class Indicators:
         return self.obv
 
 
-#df = pd.read_csv('result2.csv',
-#                         index_col='DATE',
-#                         parse_dates=True,
-#                         infer_datetime_format=True)
-#                         engine='python')
+    def Volatility(self):
+        list = []
+        list.append(0)
+        for i in range(len(self.stock[0])):
+            e = (1.0 - self.stock[0][i]/self.stock[1][i])/self.stock[2][i] 
+            list.append(e)
+        c1 = max(list)
+        c2 = min(list)
+        c3 = 50.0/max(c1, -c2)
+        for i in range(0, len(list)):
+            list[i] = list[i] * c3 + 50
 
-#stock = df.iloc[:, 0].values
-#f = Indicators(stock)
-#g = f.RSI1()
-#print(g)
+        return list
+

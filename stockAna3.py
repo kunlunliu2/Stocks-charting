@@ -49,7 +49,7 @@ class MainWindow(QtWidgets.QMainWindow):
         pybutton = QPushButton('Show charts ?', self)
         pybutton.clicked.connect(self.clickMethod)
         pybutton.resize(200,32)
-        pybutton.move(80, 200)        
+        pybutton.move(140, 200)        
 
     def clickMethod(self, checked):
         St = self.line.text()
@@ -122,7 +122,7 @@ class AnotherWindow(QtWidgets.QWidget):
         lay.addWidget(self.slider)
         self.setLayout(lay)
 
-        self.resize(640, 480)
+        self.resize(1200, 800)
 
         self.adjust_axes(100, 200)
         min_x, max_x = 0, len(self.z)
@@ -195,7 +195,13 @@ class AnotherWindow(QtWidgets.QWidget):
         self._chart.legend().hide()
         self._chart.axisX(self._candlestick_serie).setCategories(tm)
         self._chart.axisX(self._candlestick_serie).setVisible(False)
-        self._chart.setMargins(QMargins(0,0,50,0))
+        
+        d1 = 0
+        if self.z[1] < 100:
+            d1 = 20
+        elif self.z[1] < 1000:
+            d1 = 10
+        self._chart.setMargins(QMargins(d1,0,50,0))
 
         self._chart_view = QtChart.QChartView()
         self._chart.axisX(self._line0_serie).setVisible(False)
@@ -269,9 +275,9 @@ class AnotherWindow(QtWidgets.QWidget):
         self._volume.axisX(self._volume_serie).setVisible(False)
 
         self._volume_view = QtChart.QChartView()
-        self._volume.setMargins(QMargins(15,0,50,0))
+        self._volume.setMargins(QMargins(20,0,50,0))
 
-        self._volume.setTitle("Volume*(Close+Open) (with its 50 days EMA)");
+        self._volume.setTitle("Money flow: Volume*(Close+Open) (with its 50 days EMA)");
 
         self._volume_view = QChartView(self._volume)
         self._volume.axisX(self._volume1_serie).setVisible(False)
@@ -284,27 +290,44 @@ class AnotherWindow(QtWidgets.QWidget):
 
     def creat_lndicatorchart(self):
         self._line3_serie = QLineSeries()
-        list = self.stock[4]
+        self._line2_serie = QLineSeries()
+        list = self.z
         r = Indicators(list).RSI(self.Avg3)
+
+        list1 = []
+        list1.append(self.o)
+        list1.append(self.z)
+        list1.append(self.v)
+        r1 = Indicators(list1).Volatility()        
         
         for i in range(len(r)):
-            self._line3_serie.append(i, r[i])
+            self._line2_serie.append(i, r[i])
+            self._line3_serie.append(i, r1[i])
 
         Pen= QtGui.QPen()
         Pen.setWidth(2);
         Pen.setBrush(Qt.blue)
-        self._line3_serie.setPen(Pen)
+        self._line2_serie.setPen(Pen)
+
+        Pen1= QtGui.QPen()
+        Pen1.setWidth(2);
+        Pen1.setBrush(Qt.red)
+        self._line3_serie.setPen(Pen1)
 
         self._line3 = QChart()
+        self._line3.addSeries(self._line2_serie)
         self._line3.addSeries(self._line3_serie)
         self._line3.createDefaultAxes()
         self._line3.legend().hide()
 
+        print("3")
+
         self._line3_view = QtChart.QChartView()
-        self._line3.setMargins(QMargins(15,0,15,0))
-        self._line3.setTitle("RSI");
+        self._line3.setMargins(QMargins(20,0,15,0))
+        self._line3.setTitle("RSI (blue) and Volatility (red) (bullish when >50)");
 
         self._line3_view = QChartView(self._line3)
+        self._line3.axisX(self._line2_serie).setVisible(False)
         self._line3.axisX(self._line3_serie).setVisible(False)
         TimeaxisX = self.setTimeAxis()
         self._line3_serie.attachAxis(TimeaxisX)
@@ -328,39 +351,7 @@ class AnotherWindow(QtWidgets.QWidget):
         self.TimeAxisX.setLabelsAngle(0)
         self.TimeAxisX.tickInterval = 20
 
-        return self.TimeAxisX
-           
-    def creat_barchart(self):
-        self._bar_serie = QBarSeries()
-        c1 = 10.0/np.max(self.stock[5])
-        
-        for i in range(0, len(z)):
-            barset = QBarSet(str(i))
-            c = self.stock[5][i]*c1
-            barset.append(c)
-            self._bar_serie.append(barset)
-
-        self._bar = QChart()
-        self._bar.addSeries(self._bar_serie)
-        self._bar.createDefaultAxes()
-        self._bar.legend().hide()
-        self._bar_serie.count = 100
-
-        self.axisX2 = QBarCategoryAxis()
-        time1 = []
-        for i in range(len(v)):
-            c = pd.to_datetime(self.d[i],format='%m/%d/%Y %H:%M')
-            c1 = str(c.month) + "-" + str(c.day) + "-" + str(c.year)
-            time1.append(c1)
-        self.axisX2.append(time1)
-        
-        self._bar.addAxis(self.axisX2, Qt.AlignBottom)
-        
-        self._bar_view = QtChart.QChartView()
-
-        self._bar_view = QChartView(self._bar)
-
-        return self._bar_view        
+        return self.TimeAxisX    
 
     def adjust_axes(self, value_min, value_max):
         value1 = value_max - 1
@@ -392,6 +383,10 @@ class AnotherWindow(QtWidgets.QWidget):
             value_min, value1
         )
 
+        self._line3.axisX(self._line2_serie).setRange(
+            value_min, value1
+        )
+        
         self._line3.axisX(self._line3_serie).setRange(
             value_min, value1
         )
@@ -406,6 +401,7 @@ class AnotherWindow(QtWidgets.QWidget):
             self._chart.axisY(self._line03_serie).setRange(ymin, ymax)
             self._volume.axisY(self._volume_serie).setRange(0, 10)
             self._volume.axisY(self._volume1_serie).setRange(0, 10)
+            self._line3.axisY(self._line2_serie).setRange(10, 90)
             self._line3.axisY(self._line3_serie).setRange(10, 90)
             self.y1 = ymin
             self.y2 = ymax
