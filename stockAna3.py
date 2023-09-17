@@ -19,7 +19,7 @@ class MainWindow(QtWidgets.QMainWindow):
         QMainWindow.__init__(self)
 
         self.setMinimumSize(QSize(480, 240))    
-        self.setWindowTitle("PyQt Line Edit example (textfield) - pythonprogramminglanguage.com") 
+        self.setWindowTitle("Stock charting, by Kunlun Liu") 
 
         self.nameLabel = QLabel(self)
         self.nameLabel.setText('Input a stock: (^SPX)')
