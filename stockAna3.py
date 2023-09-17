@@ -3,7 +3,8 @@ from PyQt5.QtGui import QColor, QPainter, QPen
 from PyQt5.QtChart import QLineSeries, QBarSeries, QChartView, QChart
 from PyQt5.QtCore import QMargins, Qt, QSize
 from PyQt5.QtWidgets import QMainWindow, QWidget, QLabel, QLineEdit
-from PyQt5.QtWidgets import QPushButton
+from PyQt5.QtWidgets import QApplication, QPushButton
+from PyQt5.QtWidgets import *
 import math
 import numpy as np
 import pandas as pd
@@ -16,10 +17,69 @@ import yfinance as yf
 St =  "^SPX"
 
 class MainWindow(QtWidgets.QMainWindow):
+    def __init__(self):
+        QMainWindow.__init__(self)
+
+        self.setMinimumSize(QSize(480, 240))    
+        self.setWindowTitle("PyQt Line Edit example (textfield) - pythonprogramminglanguage.com") 
+
+        self.nameLabel = QLabel(self)
+        self.nameLabel.setText('Input a stock: (^SPX)')
+        self.nameLabel.resize(160, 20)
+        self.line = QLineEdit(self)
+
+        self.line.move(200, 20)
+        self.line.resize(200, 32)
+        self.nameLabel.move(20, 25)
+
+        self.nameLabel1 = QLabel(self)
+        self.nameLabel1.setText('Start day (YYYY-MM-DD):')
+        self.nameLabel1.resize(160, 20)
+        self.line1 = QLineEdit(self)
+        self.line1.move(200, 60)
+        self.line1.resize(200, 32)
+        self.nameLabel1.move(20, 65)
+
+        self.nameLabel2 = QLabel(self)
+        self.nameLabel2.setText('End day  (YYYY-MM-DD):')
+        self.nameLabel2.resize(160, 20)
+        self.line2 = QLineEdit(self)
+        self.line2.move(200, 100)
+        self.line2.resize(200, 32)
+        self.nameLabel2.move(20, 105)
+        
+        pybutton = QPushButton('Show charts ?', self)
+        pybutton.clicked.connect(self.clickMethod)
+        pybutton.resize(200,32)
+        pybutton.move(80, 200)        
+
+    def clickMethod(self, checked):
+        St = self.line.text()
+
+        start_date = self.line1.text()
+        dt = datetime.now()
+        end_date = str(dt.year) + "-" + str(dt.month) + "-" + str(dt.day)
+        x1 = "./stock.csv"
+            
+        x = stockFile(x1, St, start_date, end_date)
+        x.yahooData()
+
+        stock2 = []
+        stock2.append(x.stock.Date)
+        stock2.append(x.stock.Open)
+        stock2.append(x.stock.High)
+        stock2.append(x.stock.Low)
+        stock2.append(x.stock.Close)
+        stock2.append(x.stock.Volume)
+        self.w = AnotherWindow(stock2, St, start_date, end_date, 14, 50, 14)
+        self.w.show()
+        
+class AnotherWindow(QtWidgets.QWidget):    
     def __init__(self, stock, name, start_date, end_date, Avg1, Avg2, Avg3,
                  parent=None):
-        super().__init__(parent)
-
+        super(AnotherWindow, self).__init__()
+        win = QWidget()
+        
         self.d = stock[0]
         self.o = stock[1]
         self.h = stock[2]
@@ -52,14 +112,17 @@ class MainWindow(QtWidgets.QMainWindow):
         )
 
         central_widget = QtWidgets.QWidget()
-        self.setCentralWidget(central_widget)
+
+#        self.setCentralWidget(central_widget)
 
         lay = QtWidgets.QVBoxLayout(central_widget)
+        lay = QtWidgets.QVBoxLayout()
         lay.addWidget(view1, stretch=3)
         lay.addWidget(view2, stretch=1)
         lay.addWidget(view3, stretch=1)
-        lay.addWidget(self.scrollbar)
+        lay.addWidget(self.scrollbar)       
         lay.addWidget(self.slider)
+        self.setLayout(lay)
 
         self.resize(640, 480)
 
@@ -68,6 +131,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.lims = np.array([min_x, max_x])
 
         self.onAxisSliderMoved(self.scrollbar.value())
+        win.show()
         
 
     def creat_candelstick(self):
@@ -371,28 +435,10 @@ class MainWindow(QtWidgets.QMainWindow):
         
 if __name__ == "__main__":
 
-    start_date = "2016-1-1"
-    dt = datetime.now()
-    end_date = str(dt.year) + "-" + str(dt.month) + "-" + str(dt.day)
-    print(end_date)
-
-#    St =  ["^RUT", "SOXL", "UAL", "AAPL", "JPM", "CAT", "MSFT", "AMZN"]
-    x1 = "./stock.csv"
-        
-    x = stockFile(x1, St, start_date, end_date)
-    x.yahooData()
-
-    stock2 = []
-    stock2.append(x.stock.Date)
-    stock2.append(x.stock.Open)
-    stock2.append(x.stock.High)
-    stock2.append(x.stock.Low)
-    stock2.append(x.stock.Close)
-    stock2.append(x.stock.Volume)    
         
     app = QtWidgets.QApplication(sys.argv)
         
-    w = MainWindow(stock2, St, start_date, end_date, 14, 50, 14)
-    w.show()
+    mainWin = MainWindow()
+    mainWin.show()
 
     sys.exit(app.exec_())
