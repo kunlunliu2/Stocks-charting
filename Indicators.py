@@ -60,7 +60,30 @@ class Indicators:
 
         return self.obv
 
+    def MACD(self, avg1, avg2, avg3):
+        
+        a = 2.0 / (avg1+1.0)
+        b = 2.0 / (avg2+1.0)
+        c = 2.0 / (avg3+1.0)
 
+        d = self.stock[0]
+        e = self.stock[0]
+        list1=[]
+        list2=[]
+        f = 0
+        g = 0
+        list1.append(0)
+        list2.append(0)
+        for i in range(1, len(self.stock)):
+            d = self.stock[i] * a + d * (1.0 - a)
+            e = self.stock[i] * b + e * (1.0 - b)
+            f = d - e
+            g = f * c + g * (1.0-c)
+            list1.append(f)
+            list2.append(g)
+        
+        return list1, list2
+    
     def Volatility(self):
         list = []
         list.append(0)

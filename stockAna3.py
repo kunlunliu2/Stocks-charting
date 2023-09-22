@@ -18,7 +18,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         QMainWindow.__init__(self)
 
-        self.setMinimumSize(QSize(480, 240))    
+        self.setMinimumSize(QSize(480, 300))    
         self.setWindowTitle("Stock charting, by Kunlun Liu") 
 
         self.nameLabel = QLabel(self)
@@ -45,11 +45,24 @@ class MainWindow(QtWidgets.QMainWindow):
         self.line2.move(200, 100)
         self.line2.resize(200, 32)
         self.nameLabel2.move(20, 105)
+
+        self.nameLabel3 = QLabel(self)
+        self.nameLabel3.setText('Compare to a stock \nfor relavent strength')
+        self.nameLabel3.resize(160, 40)
+        self.line3 = QLineEdit(self)
+        self.line3.move(200, 140)
+        self.line3.resize(200, 32)
+        self.nameLabel3.move(20, 140)
         
-        pybutton = QPushButton('Show charts ?', self)
+        pybutton = QPushButton('Page A', self)
         pybutton.clicked.connect(self.clickMethod)
-        pybutton.resize(200,32)
-        pybutton.move(140, 200)        
+        pybutton.resize(160,32)
+        pybutton.move(40, 250)        
+
+        pybutton1 = QPushButton('Page B', self)
+        pybutton1.clicked.connect(self.clickMethod1)
+        pybutton1.resize(160,32)
+        pybutton1.move(240, 250)        
 
     def clickMethod(self, checked):
         St = self.line.text()
@@ -58,7 +71,8 @@ class MainWindow(QtWidgets.QMainWindow):
         dt = datetime.now()
         end_date = str(dt.year) + "-" + str(dt.month) + "-" + str(dt.day)
         x1 = "./stock.csv"
-            
+        
+        pag = 1
         x = stockFile(x1, St, start_date, end_date)
         x.yahooData()
 
@@ -69,11 +83,38 @@ class MainWindow(QtWidgets.QMainWindow):
         stock2.append(x.stock.Low)
         stock2.append(x.stock.Close)
         stock2.append(x.stock.Volume)
-        self.w = AnotherWindow(stock2, St, start_date, end_date, 14, 50, 14)
+        self.w = AnotherWindow(stock2, St, start_date, end_date, 14, 50, 14, pag)
+        self.w.show()
+
+    def clickMethod1(self, checked):
+        St = self.line.text()
+
+        start_date = self.line1.text()
+        dt = datetime.now()
+        end_date = str(dt.year) + "-" + str(dt.month) + "-" + str(dt.day)
+        x1 = "./stock.csv"
+        
+        pag = 2
+        x = stockFile(x1, St, start_date, end_date)
+        x.yahooData()
+
+        St1 = self.line3.text()
+        x2 = stockFile(x1, St1, start_date, end_date)
+        x2.yahooData()
+
+        stock2 = []
+        stock2.append(x.stock.Date)
+        stock2.append(x.stock.Open)
+        stock2.append(x.stock.High)
+        stock2.append(x.stock.Low)
+        stock2.append(x.stock.Close)
+        stock2.append(x.stock.Volume)
+        stock2.append(x2.stock.Close)
+        self.w = AnotherWindow(stock2, St, start_date, end_date, 14, 50, 14, pag)
         self.w.show()
         
 class AnotherWindow(QtWidgets.QWidget):    
-    def __init__(self, stock, name, start_date, end_date, Avg1, Avg2, Avg3,
+    def __init__(self, stock, name, start_date, end_date, Avg1, Avg2, Avg3, pag,
                  parent=None):
         super(AnotherWindow, self).__init__()
         win = QWidget()
@@ -84,6 +125,9 @@ class AnotherWindow(QtWidgets.QWidget):
         self.l = stock[3]
         self.z = stock[4]
         self.v = stock[5]
+        self.ind0 = []
+        self.ind1 = []
+        self.ind2 = []
         self.name = name
         self.stock = stock
         self.Avg1 = Avg1
@@ -91,6 +135,12 @@ class AnotherWindow(QtWidgets.QWidget):
         self.Avg3 = Avg3
         self.start_date = start_date
         self.end_date = end_date
+        self.pag = pag
+        self.TimeAxisX1 = []
+        self.TimeAxisX2 = []
+
+        if self.pag == 2:
+            self.z1 = stock[6]
 
         self.step = 0.1
         self.x1 = 100
@@ -195,13 +245,13 @@ class AnotherWindow(QtWidgets.QWidget):
         self._chart.legend().hide()
         self._chart.axisX(self._candlestick_serie).setCategories(tm)
         self._chart.axisX(self._candlestick_serie).setVisible(False)
-        
+
         d1 = 0
         if self.z[1] < 100:
             d1 = 20
         elif self.z[1] < 1000:
             d1 = 10
-        self._chart.setMargins(QMargins(d1,0,50,0))
+        self._chart.setMargins(QMargins(d1,0,0,0))
 
         self._chart_view = QtChart.QChartView()
         self._chart.axisX(self._line0_serie).setVisible(False)
@@ -209,6 +259,10 @@ class AnotherWindow(QtWidgets.QWidget):
         self._chart.axisX(self._line02_serie).setVisible(False)
         self._chart.axisX(self._line03_serie).setVisible(False)
         self._chart.setTitle(self.name);
+
+        self.TimeAxisX1 = self.setTimeAxis()
+        self._line03_serie.attachAxis(self.TimeAxisX1)
+        self._chart.addAxis(self.TimeAxisX1, Qt.AlignBottom)
 
         font=QtGui.QFont()
         font.setPixelSize(20)
@@ -225,40 +279,58 @@ class AnotherWindow(QtWidgets.QWidget):
         self._volume1_serie = QLineSeries()
         self._volume1_serie.count = 100
 
-        self._volume_serie = QtChart.QCandlestickSeries()
-        self._volume_serie.setDecreasingColor(QtGui.QColor(QtCore.Qt.red))
-        self._volume_serie.setIncreasingColor(QtGui.QColor(QtCore.Qt.green))
+        if self.pag == 1:
+
+            self._volume_serie = QtChart.QCandlestickSeries()
+            self._volume_serie.setDecreasingColor(QtGui.QColor(QtCore.Qt.red))
+            self._volume_serie.setIncreasingColor(QtGui.QColor(QtCore.Qt.green))
+            
+            self._volume_serie.count = 100
+            c1 = 0.0
+            for i in range(len(self.z)):
+                c1 = max(c1, (self.z[i]+self.o[i])*self.v[i])
+            c1 = 10.0 / c1
+            list = []
+            tm = []
+            for i in range(0, len(self.z)):
+                c = self.v[i]*(self.z[i]+self.o[i])*c1
+                list.append(c)
+                if self.o[i] > self.z[i]:
+                    o_ = c
+                    h_ = c
+                    l_ = 0
+                    c_ = 0
+                else:
+                    o_ = 0
+                    h_ = c
+                    l_ = 0
+                    c_ = c
+
+                self._volume_serie.append(QtChart.QCandlestickSet(o_, h_, l_, c_))
+                tm.append(str(i))
+
+            r = Indicators(list).EMA(self.Avg2)
+            for i in range(1, len(self.v)):
+                c = r[i]
+                self._volume1_serie.append(i, c)
+
+        else:
+
+            self._volume_serie = QLineSeries()            
+            self._volume_serie.count = 100
+
+            c = self.z1[0] / self.z[0]
+            a = 2.0 / (self.Avg1+1.0)
+            c2 = 1.0
         
-        self._volume_serie.count = 100
-        c1 = 0.0
-        for i in range(len(self.z)):
-            c1 = max(c1, (self.z[i]+self.o[i])*self.v[i])
-        c1 = 10.0 / c1
-        list = []
-        tm = []
-        for i in range(0, len(self.z)):
-            c = self.v[i]*(self.z[i]+self.o[i])*c1
-            list.append(c)
-            if self.o[i] > self.z[i]:
-                o_ = c
-                h_ = c
-                l_ = 0
-                c_ = 0
-            else:
-                o_ = 0
-                h_ = c
-                l_ = 0
-                c_ = c
+            for i in range(0, len(self.z)):
+                c1 = self.z[i] / self.z1[i] * c
+                self._volume_serie.append(i, c1)
+                self.ind0.append(c1)
+                
+                c2 = c1 * a + c2 *(1.0-a)
+                self._volume1_serie.append(i, c2)
 
-            self._volume_serie.append(QtChart.QCandlestickSet(o_, h_, l_, c_))
-            tm.append(str(i))
-
-        r = Indicators(list).EMA(self.Avg2)
-        for i in range(1, len(self.v)):
-            c = r[i]
-            self._volume1_serie.append(i, c)
-
-#        self._volume1_serie.setColor(QtGui.QColor(QtCore.Qt.red))
 
         Pen= QtGui.QPen()
         Pen.setWidth(3);
@@ -271,16 +343,24 @@ class AnotherWindow(QtWidgets.QWidget):
         self._volume.addSeries(self._volume1_serie)
         self._volume.createDefaultAxes()
         self._volume.legend().hide()
-        self._volume.axisX(self._volume_serie).setCategories(tm)
+        if self.pag == 1:
+            self._volume.axisX(self._volume_serie).setCategories(tm)
+            self._volume.setTitle("Money flow: Volume*(Close+Open) (with its 50 days EMA)");
+        else:
+            st = "relavent strength and its 20-days EMA ( "+self.name+" performs better, when relavent strength >1 )" 
+            self._volume.setTitle(st);
+
         self._volume.axisX(self._volume_serie).setVisible(False)
+        self._volume.axisX(self._volume1_serie).setVisible(False)
 
         self._volume_view = QtChart.QChartView()
-        self._volume.setMargins(QMargins(20,0,50,0))
+        self._volume.setMargins(QMargins(20,0,0,0))
 
-        self._volume.setTitle("Money flow: Volume*(Close+Open) (with its 50 days EMA)");
+        self.TimeAxisX2 = self.setTimeAxis()
+        self._volume1_serie.attachAxis(self.TimeAxisX2)
+        self._volume.addAxis(self.TimeAxisX2, Qt.AlignBottom)
 
         self._volume_view = QChartView(self._volume)
-        self._volume.axisX(self._volume1_serie).setVisible(False)
         
 #        self._line.axisX(self._line_serie).setGridLineVisible(True)
 #        self._line.axisX(self._line_serie).setShadesVisible(False)
@@ -291,18 +371,25 @@ class AnotherWindow(QtWidgets.QWidget):
     def creat_lndicatorchart(self):
         self._line3_serie = QLineSeries()
         self._line2_serie = QLineSeries()
-        list = self.z
-        r = Indicators(list).RSI(self.Avg3)
 
-        list1 = []
-        list1.append(self.o)
-        list1.append(self.z)
-        list1.append(self.v)
-        r1 = Indicators(list1).Volatility()        
+        list = self.z
+
+
+        if self.pag == 1:
+            self.ind1 = Indicators(list).RSI(self.Avg3)
+
+            list1 = []
+            list1.append(self.o)
+            list1.append(self.z)
+            list1.append(self.v)
+            self.ind2 = Indicators(list1).Volatility()
+            
+        else:
+            self.ind1, self.ind2 = Indicators(list).MACD(5, 25, 10)
         
-        for i in range(len(r)):
-            self._line2_serie.append(i, r[i])
-            self._line3_serie.append(i, r1[i])
+        for i in range(len(self.ind1)):
+            self._line2_serie.append(i, self.ind1[i])
+            self._line3_serie.append(i, self.ind2[i])
 
         Pen= QtGui.QPen()
         Pen.setWidth(2);
@@ -323,9 +410,13 @@ class AnotherWindow(QtWidgets.QWidget):
         print("3")
 
         self._line3_view = QtChart.QChartView()
-        self._line3.setMargins(QMargins(20,0,15,0))
-        self._line3.setTitle("RSI (blue) and Volatility (red) (bullish when >50)");
+        self._line3.setMargins(QMargins(20,0,0,0))
 
+        if self.pag == 1:
+            self._line3.setTitle("RSI (blue) and Volatility (red) (bullish when >50)");
+        else:
+            self._line3.setTitle("MACD (14,26,9)");
+            
         self._line3_view = QChartView(self._line3)
         self._line3.axisX(self._line2_serie).setVisible(False)
         self._line3.axisX(self._line3_serie).setVisible(False)
@@ -374,10 +465,15 @@ class AnotherWindow(QtWidgets.QWidget):
         self._chart.axisX(self._line03_serie).setRange(
             value_min, value1
         )
-        
-        self._volume.axisX(self._volume_serie).setRange(
-            str(value_min), str(value1)
-        )
+
+        if self.pag == 1:
+            self._volume.axisX(self._volume_serie).setRange(
+                str(value_min), str(value1)
+            )
+        else:
+            self._volume.axisX(self._volume1_serie).setRange(
+                value_min, value1
+            )
 
         self._volume.axisX(self._volume1_serie).setRange(
             value_min, value1
@@ -399,17 +495,38 @@ class AnotherWindow(QtWidgets.QWidget):
             self._chart.axisY(self._line01_serie).setRange(ymin, ymax)
             self._chart.axisY(self._line02_serie).setRange(ymin, ymax)
             self._chart.axisY(self._line03_serie).setRange(ymin, ymax)
-            self._volume.axisY(self._volume_serie).setRange(0, 10)
-            self._volume.axisY(self._volume1_serie).setRange(0, 10)
-            self._line3.axisY(self._line2_serie).setRange(10, 90)
-            self._line3.axisY(self._line3_serie).setRange(10, 90)
+            if self.pag == 1:
+                self._volume.axisY(self._volume_serie).setRange(0, 10)
+                self._volume.axisY(self._volume1_serie).setRange(0, 10)
+
+                self._line3.axisY(self._line2_serie).setRange(10, 90)
+                self._line3.axisY(self._line3_serie).setRange(10, 90)
+            else:
+                ymin1 = np.amin(self.ind0[int(value_min): int(value1)])*0.9
+                ymax1 = np.amax(self.ind0[int(value_min): int(value1)])*1.1
+                self._volume.axisY(self._volume_serie).setRange(ymin1, ymax1)
+                self._volume.axisY(self._volume1_serie).setRange(ymin1, ymax1)
+                
+                ymin2 = np.amin(self.ind1[int(value_min): int(value1)])*0.9
+                ymax2 = np.amax(self.ind1[int(value_min): int(value1)])*1.1
+                ymax2 = max(ymax2, abs(ymin2))
+                ymin2 = - ymax2
+                    
+                self._line3.axisY(self._line2_serie).setRange(ymin2, ymax2)
+                self._line3.axisY(self._line3_serie).setRange(ymin2, ymax2)
+                
             self.y1 = ymin
             self.y2 = ymax
 
+
         s0 = pd.to_datetime(self.d[value_min],format='%m/%d/%Y %H:%M')
         self.TimeAxisX.setMin(s0)
+        self.TimeAxisX1.setMin(s0)
+        self.TimeAxisX2.setMin(s0)
         s0 = pd.to_datetime(self.d[value1],format='%m/%d/%Y %H:%M')
         self.TimeAxisX.setMax(s0)
+        self.TimeAxisX1.setMax(s0)
+        self.TimeAxisX2.setMax(s0)
         
     @QtCore.pyqtSlot(int)
     def onAxisSliderMoved(self, value):
